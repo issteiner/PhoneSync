@@ -4,6 +4,7 @@
 
 ACTUAL_DATE=$(date +%Y%m%d)
 ACTUAL_TIME=$(date +%H%M%S)
+START_TIME_SEC=$(date +'%s')
 
 SCRIPT_PATH=$(readlink -f $0)             # In case we execute it as a symlink
 SCRIPT_NAME=$(basename ${SCRIPT_PATH%%.sh})
@@ -24,17 +25,51 @@ PHONE_DOC_DIR="${PHONE_BASE_DIR}/Documents"
 PHONE_TRANSFER_DIR="${PHONE_DOC_DIR}/0_Transfer"
 
 DIRS_TO_PHONE="Private/0_Privat/Projektek/0_Folyo/HazFelujitas_2015- Private/6_AlkalmazottTudomany Private/0_Privat/Aktualis/CsinalniValo Private/0_Privat/Ingatlanok Common/Scripts"
+# DIRS_TO_PHONE="Temp/TestFiles"
 DIRS_FROM_PHONE="DCIM Download Documents/Actual Documents/1_BackTransfer"
 
+gvfs_mtp_mount_dev=$(gvfs-mount -l | awk '/^Mount.*mtp\ -/ {print $4}')
+pid_gvfsd_mtp=$(pidof gvfsd-mtp)
 
-function print_and_log () {
+nr_of_transactions=0
+
+function increase_nr_of_transactions {
+    let nr_of_transactions=nr_of_transactions+1
+    cents=$(echo "$nr_of_transactions % 20" | bc)
+    if [ $cents -eq 0 ]
+    then
+        resident_memory=$(/usr/bin/top -b -p $pid_gvfsd_mtp -n 1 | awk "/$USER/"' {print $6}')
+        print_and_log "${nr_of_transactions}    ${resident_memory}"
+        if [ $resident_memory -gt 10000 ]
+        then
+            echo -e "WARNING! Resident memory is over 10000.\nRemounting device..."
+            gvfs-mount -u ${gvfs_mtp_mount_dev}
+            sleep 5
+            gvfs-mount ${gvfs_mtp_mount_dev}
+            pid_gvfsd_mtp=$(pidof gvfsd-mtp)
+            print_and_log "PID OF GVFSD-MTP: $pid_gvfsd_mtp"
+        fi
+    fi
+}
+
+function print_and_log {
     echo -n "$(date +%Y.%m.%d-%H:%M:%S) - " >>${OUTLOG}
     echo -e "$1" | tee -a ${OUTLOG}
 }
 
-function only_log () {
+function only_log {
     echo -n "$(date +%Y.%m.%d-%H:%M:%S) - " >>${OUTLOG}
     echo -e "$1" >>${OUTLOG}
+}
+
+function exit_if_error {
+    if [ $1 -ne 0 ]
+    then
+        resident_memory=$(/usr/bin/top -b -p $pid_gvfsd_mtp -n 1 | awk "/$USER/"' {print $6}')
+        print_and_log "${nr_of_transactions}    ${resident_memory}"
+        print_and_log "ERROR occurred. Exiting..."
+        exit 1
+    fi
 }
 
 function copy_fromto_phone {
@@ -49,7 +84,8 @@ function copy_fromto_phone {
         dir_tail=${dir##${source_base_dir}/}
         only_log "gvfs-mkdir -p ${target_dir}/${dir_tail}"
         gvfs-mkdir -p ${target_dir}/${dir_tail} 2>>${ERRORLOG}
-        sleep 0.05
+        exit_if_error $?
+#        increase_nr_of_transactions
     done
 
     for file_to_copy in $(find ${source_base_dir}/${source_dir} -type f)
@@ -58,21 +94,24 @@ function copy_fromto_phone {
         file_to_copy_dir_tail=${file_to_copy_dir##${source_base_dir}/}
         only_log "gvfs-copy ${file_to_copy} ${target_dir}/${file_to_copy_dir_tail}/"
         gvfs-copy ${file_to_copy} ${target_dir}/${file_to_copy_dir_tail}/ 2>>${ERRORLOG}
-        sleep 0.05
+        exit_if_error $?
+        increase_nr_of_transactions
     done
     IFS="$OIFS"
 }
 
-# MAIN
+########
+# MAIN #
+########
 
 if [ ! -d $LOGDIR ]
 then
     mkdir -p "${LOGDIR}"
 fi
 
-if ! ls ${PHONE_BASE_DIR} >/dev/null 2>>${ERRORLOG}
+if ! ls ${PHONE_BASE_DIR} >/dev/null 2>&1
 then
-    print_and_log "ERROR! Phone is not mounted, please mount it and try again. Exiting..."
+    echo "ERROR! Phone is not mounted. Please mount it and try again. Exiting..."
     exit 1
 fi
 
@@ -81,8 +120,12 @@ then
     print_and_log "Creating ${PC_PHONE_DIR}..."
     only_log "mkdir -p ${PC_PHONE_DIR}"
     mkdir -p "${PC_PHONE_DIR}" 2>>${ERRORLOG}
+    exit_if_error $?
 fi
 
+print_and_log "PID OF GVFSD-MTP: $pid_gvfsd_mtp"
+print_and_log "Nr. of transactions      Resident memory"
+    
 print_and_log "Copying files from phone to the own HDD..."
 
 for dir in ${DIRS_FROM_PHONE}

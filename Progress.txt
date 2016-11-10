@@ -1,0 +1,36 @@
+
+TO DO
+-----
+
+
+TO FIX
+------
+
+- Message did not receive a reply (timeout by message bus)
+In file PhoneSync_20161104_122640.log (no sleeps)
+2016.11.04-12:28:50 - 2016.11.04-12:26:40 > 2:10
+Nov  4 12:28:50 elxa6nt1q12 kernel: [18166.318111] traps: gvfsd-mtp[31409] trap int3 ip:7fb3d2ffcc13 sp:7ffe77c5c830 error:0
+
+In file PhoneSync_20161104_124446.log (no sleeps)
+2016.11.04-12:47:25 - 2016.11.04-12:44:47 > 2:37
+Nov  4 12:47:25 elxa6nt1q12 kernel: [19280.991498] traps: gvfsd-mtp[11353] trap int3 ip:7f64813d5c13 sp:7ffc4c1c9180 error:0
+
+With 5 sec sleeps between directories and 0.2 between gvfs-copies
+2016.11.04-13:06:32 - 2016.11.04-13:00:46 > 5:50
+Nov  4 13:06:32 elxa6nt1q12 kernel: [20428.167467] traps: gvfsd-mtp[22469] trap int3 ip:7fd2fe4d9c13 sp:7ffcf1383310 error:0
+
+With 10 sec sleeps between directories and 0.5 between gvfs-copies
+2016.11.04-13:27:32 - 2016.11.04-13:20:16 > 7:18
+Nov  4 13:27:32 elxa6nt1q12 kernel: [21687.126006] traps: gvfsd-mtp[4347] trap int3 ip:7feb390e5c13 sp:7ffdee537cb0 error:0
+
+[ 1120.164016] do_trap: 3 callbacks suppressed
+[ 1120.164023] traps: gvfsd-mtp[8440] trap int3 ip:7f465d9e5c13 sp:7ffe52782f60 error:0
+
+[ 4278.274637] do_trap: 3 callbacks suppressed
+[ 4278.274641] traps: gvfsd-mtp[7608] trap int3 ip:7f1243799c13 sp:7ffe350f5d40 error:0
+
+Fixed in d14c2a4
+
+- Fake Phone is not mounted error when first execute
+
+
