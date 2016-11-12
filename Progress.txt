@@ -2,6 +2,7 @@
 TO DO
 -----
 
+- Clean 0_Transfer dir on the phone
 
 TO FIX
 ------
@@ -29,8 +30,9 @@ Nov  4 13:27:32 elxa6nt1q12 kernel: [21687.126006] traps: gvfsd-mtp[4347] trap i
 [ 4278.274637] do_trap: 3 callbacks suppressed
 [ 4278.274641] traps: gvfsd-mtp[7608] trap int3 ip:7f1243799c13 sp:7ffe350f5d40 error:0
 
-Fixed in d14c2a4
+Worked around - OK
 
 - Fake Phone is not mounted error when first execute
 
+Worked around - OK
 
