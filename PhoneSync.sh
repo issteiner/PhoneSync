@@ -140,6 +140,13 @@ do
     copy_fromto_phone ${PHONE_BASE_DIR} ${dir} ${PC_PHONE_ACTUAL_DIR}
 done
 
+print_and_log "Cleaning up the previously backed up files/directories on the phone..."
+for file_or_dir in "${PHONE_TRANSFER_DIR}"/*
+do
+    only_log "gvfs-rm ${file_or_dir} 2>>${ERRORLOG}"
+    gvfs-rm "${file_or_dir}" 2>>${ERRORLOG}
+done
+
 print_and_log "Copying files from the own HDD to the phone..."
 for dir in ${DIRS_TO_PHONE}
 do
