@@ -91,6 +91,7 @@ function copy_fromto_phone {
         dir_tail=${dir##${source_base_dir}/}
         only_log "gvfs-mkdir -p ${target_dir}/${dir_tail}"
         gvfs-mkdir -p ${target_dir}/${dir_tail} 2>>${ERRORLOG}
+        increase_nr_of_transactions
         exit_if_error $?
     done
 
@@ -140,6 +141,19 @@ do
     copy_fromto_phone ${PHONE_BASE_DIR} ${dir} ${PC_PHONE_ACTUAL_DIR}
 done
 
+print_and_log "Searching for duplicate files, and removing found duplicate files in the copied files/directories on the HDD..."
+only_log "./dupliSeek.py -v -p -r ${PC_DOC_DIR} ${PC_PHONE_ACTUAL_DIR}"
+
+cd /home/ethsri/Documents/Common/Scripts/DupliSeek
+./dupliSeek.py -v -p -r ${PC_DOC_DIR} ${PC_PHONE_ACTUAL_DIR} >>${OUTLOG} 2>>${ERRORLOG}
+
+print_and_log "Deleting zero size files and empty directories in the copied files/directories on the HDD..."
+only_log "find ${PC_PHONE_ACTUAL_DIR} -type f -size 0 -delete"
+only_log "find ${PC_PHONE_ACTUAL_DIR} -type d -empty -delete"
+
+find ${PC_PHONE_ACTUAL_DIR} -type f -size 0 -delete 2>>${ERRORLOG}
+find ${PC_PHONE_ACTUAL_DIR} -type d -empty -delete 2>>${ERRORLOG}
+
 print_and_log "Cleaning up the previously backed up files/directories on the phone..."
 for file_or_dir in "${PHONE_TRANSFER_DIR}"/*
 do
@@ -154,18 +168,6 @@ do
     copy_fromto_phone ${PC_DOC_DIR} ${dir} ${PHONE_TRANSFER_DIR}
 done
 
-print_and_log "Searching for duplicate files, and removing found duplicate files in the copied files/directories on the HDD..."
-only_log "./dupliSeek.py -v -p -r ${PC_DOC_DIR} ${PC_PHONE_ACTUAL_DIR}"
-
-cd /home/ethsri/Documents/Common/Scripts/DupliSeek
-./dupliSeek.py -v -p -r ${PC_DOC_DIR} ${PC_PHONE_ACTUAL_DIR} >>${OUTLOG} 2>>${ERRORLOG}
-
-print_and_log "Deleting zero size files and empty directories in the copied files/directories on the HDD..."
-only_log "find ${PC_PHONE_ACTUAL_DIR} -type f -size 0 -delete"
-only_log "find ${PC_PHONE_ACTUAL_DIR} -type d -empty -delete"
-
-find ${PC_PHONE_ACTUAL_DIR} -type f -size 0 -delete 2>>${ERRORLOG}
-find ${PC_PHONE_ACTUAL_DIR} -type d -empty -delete 2>>${ERRORLOG}
 
 # Clean up errorlog if empty
 if [ ! -s ${ERRORLOG} ]
